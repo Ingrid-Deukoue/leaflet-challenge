@@ -1,141 +1,102 @@
-// define our API
-var earth_API = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_hour.geojson"
-API_plates = "https://github.com/fraxen/tectonicplates/blob/master/GeoJSON/PB2002_boundaries.json"
-
-function markerSize(magnitude) {
- return magnitude * 4;
-};
-
-
-var earthquakes = new L.LayerGroup();
-
-d3.json(earth_API, function (geoJson) {
- L.geoJSON(geoJson.features, {
-  pointToLayer: function (geoJsonPoint, latlng) {
-   return L.circleMarker(latlng, { radius: markerSize(geoJsonPoint.properties.mag) });
-  },
-
-  style: function (geoJsonFeature) {
-   return {
-    fillColor: Color(geoJsonFeature.properties.mag),
-    fillOpacity: 0.7,
-    weight: 0.1,
-    color: 'black'
-
-   }
-  },
-
-  onEachFeature: function (feature, layer) {
-   layer.bindPopup(
-    "<h4 style='text-align:center;'>" + new Date(feature.properties.time) +
-    "</h4> <hr> <h5 style='text-align:center;'>" + feature.properties.title + "</h5>");
-  }
- }).addTo(earthquakes);
- createMap(earthquakes);
+//  initial map object
+// set the longitude, latitude, and the starting zoom level f
+var myMap = L.map("mapid", {
+  center: [37.7749, -122.4194],
+  zoom: 5
 });
 
-var plateBoundary = new L.LayerGroup();
+// Add a tile layer (the background map image) to our map
 
-d3.json(API_plates, function (geoJson) {
- L.geoJSON(geoJson.features, {
-  style: function (geoJsonFeature) {
-   return {
-    weight: 2,
-    color: 'magenta'
-   }
-  },
- }).addTo(plateBoundary);
-})
-
-
-function Color(magnitude) {
- if (magnitude > 5) {
-  return 'red'
- } else if (magnitude > 4) {
-  return 'darkorange'
- } else if (magnitude > 3) {
-  return 'tan'
- } else if (magnitude > 2) {
-  return 'yellow'
- } else if (magnitude > 1) {
-  return 'darkgreen'
- } else {
-  return 'lightgreen'
- }
-};
-
-function createMap() {
-
- var highContrastMap = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-  attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+  attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
   maxZoom: 18,
-  id: 'mapbox.high-contrast',
-  accessToken: 'pk.eyJ1IjoibW9kZWxvYm9vdGNhbXAiLCJhIjoiY2p2ajB0bHVjMDVzMzQ4cGJwc3Awb2J1aSJ9.EqOe7ebL_KhiMTeGJtcxZA'
- });
+  id: "mapbox.streets",
+  accessToken: "pk.eyJ1IjoiZGV1a291ZSIsImEiOiJja2doNTN1Ym0wMGlsMnlvNnRsbGhraDByIn0.RfIwvYOS3-aU9Kzyf6oa0g"
+}).addTo(myMap);
 
- var streetMap = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-  attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-  maxZoom: 18,
-  id: 'mapbox.streets',
-  accessToken: 'pk.eyJ1IjoibW9kZWxvYm9vdGNhbXAiLCJhIjoiY2p2ajB0bHVjMDVzMzQ4cGJwc3Awb2J1aSJ9.EqOe7ebL_KhiMTeGJtcxZA'
- });
+// Store our API endpoint
+var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
- var darkMap = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-  attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-  maxZoom: 18,
-  id: 'mapbox.dark',
-  accessToken: 'pk.eyJ1IjoibW9kZWxvYm9vdGNhbXAiLCJhIjoiY2p2ajB0bHVjMDVzMzQ4cGJwc3Awb2J1aSJ9.EqOe7ebL_KhiMTeGJtcxZA'
- });
-
-
- var satellite = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-  attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-  maxZoom: 18,
-  id: 'mapbox.satellite',
-  accessToken: API_KEY
- });
-
-
- var baseLayers = {
-  "High Contrast": highContrastMap,
-  "Street": streetMap,
-  "Dark": darkMap,
-  "Satellite": satellite
- };
-
- var overlays = {
-  "Earthquakes": earthquakes,
-  "Plate Boundaries": plateBoundary,
- };
-
- var mymap = L.map('mymap', {
-  center: [40, -99],
-  zoom: 4.3,
-
-  layers: [streetMap, earthquakes, plateBoundary]
- });
-
- L.control.layers(baseLayers, overlays).addTo(mymap);
-
- var legend = L.control({ position: 'bottomright' });
-
- legend.onAdd = function (map) {
-
-  var div = L.DomUtil.create('div', 'info legend'),
-   magnitude = [0, 1, 2, 3, 4, 5],
-   labels = [];
-
-  div.innerHTML += "<h4 style='margin:4px'>Magnitude</h4>"
-
-  for (var i = 0; i < magnitude.length; i++) {
-   div.innerHTML +=
-    '<i style="background:' + Color(magnitude[i] + 1) + '"></i> ' +
-    magnitude[i] + (magnitude[i + 1] ? '&ndash;' + magnitude[i + 1] + '<br>' : '+');
+//  GET color radius call to the query URL
+d3.json(queryUrl, function(data) {
+function styleInfo(feature) {
+  return {
+    opacity: 1,
+    fillOpacity: 1,
+    fillColor: getColor(feature.properties.mag),
+    color: "#000000",
+    radius: getRadius(feature.properties.mag),
+    stroke: true,
+    weight: 0.5
+  };
+}
+// set different color from magnitude
+  function getColor(magnitude) {
+  switch (true) {
+  case magnitude > 5:
+    return "#ea2c2c";
+  case magnitude > 4:
+    return "#ea822c";
+  case magnitude > 3:
+    return "#ee9c00";
+  case magnitude > 2:
+    return "#eecc00";
+  case magnitude > 1:
+    return "#d4ee00";
+  default:
+    return "#98ee00";
+  }
+}
+// set radiuss from magnitude
+  function getRadius(magnitude) {
+  if (magnitude === 0) {
+    return 1;
   }
 
-  return div;
- };
- legend.addTo(mymap);
+  return magnitude * 4;
 }
+  // GeoJSON layer
+  L.geoJson(data, {
+    // Maken cricles
+    pointToLayer: function(feature, latlng) {
+      return L.circleMarker(latlng);
+    },
+    // cirecle style
+    style: styleInfo,
+    // popup for each marker
+    onEachFeature: function(feature, layer) {
+      layer.bindPopup("Magnitude: " + feature.properties.mag + "<br>Location: " + feature.properties.place);
+    }
+  }).addTo(myMap);
 
-// createMap()
+  // an object legend
+  var legend = L.control({
+    position: "bottomright"
+  });
+
+  // details for the legend
+  legend.onAdd = function() {
+    var div = L.DomUtil.create("div", "info legend");
+
+    var grades = [0, 1, 2, 3, 4, 5];
+    var colors = [
+      "#98ee00",
+      "#d4ee00",
+      "#eecc00",
+      "#ee9c00",
+      "#ea822c",
+      "#ea2c2c"
+    ];
+
+    // Looping through
+    for (var i = 0; i < grades.length; i++) {
+      div.innerHTML +=
+        "<i style='background: " + colors[i] + "'></i> " +
+        grades[i] + (grades[i + 1] ? "&ndash;" + grades[i + 1] + "<br>" : "+");
+    }
+    return div;
+  };
+
+  // Finally, we our legend to the map.
+  legend.addTo(myMap);
+});
